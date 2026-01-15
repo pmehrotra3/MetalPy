@@ -161,7 +161,7 @@ bash
 python3 test.py
 ```
 
-Results are written to `output/test_results_[timestamp].txt`
+Results are written to `Output/test_results_[timestamp].txt`
 
 
 ---
