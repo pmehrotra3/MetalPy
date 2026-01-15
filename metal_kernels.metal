@@ -1,7 +1,9 @@
 #include <metal_stdlib>
 using namespace metal;
 
-// Category 1: Elementwise Math
+
+// Category 1: Elementwise Operations
+
 
 // 1) Elementwise addition
 kernel void add_kernel(device const float *a   [[ buffer(0) ]],
@@ -48,7 +50,7 @@ kernel void division_kernel(device const float *a   [[ buffer(0) ]],
                      uint id                 [[ thread_position_in_grid ]]) {
 
     if (id < N) {
-        out[id] = a[id] / b[id];   // Let IEEE-754 handle all special cases
+        out[id] = a[id] / b[id];   // Let IEEE-754 handle all edge cases.
     }
 }
 
@@ -70,14 +72,14 @@ kernel void abs_kernel(device const float *a   [[ buffer(0) ]],
                        uint id                 [[ thread_position_in_grid ]]) {
 
     if (id < N) {
-        out[id] = fabs(a[id]);   // use fabs for float
+        out[id] = fabs(a[id]);   // fabs() is the Metal standard-library intrinsic for float absolute value.
     }
 }
 
 // 7) Elementwise power function
 kernel void pow_kernel(device const float *a   [[ buffer(0) ]],
-                       constant float &c       [[ buffer(1) ]],
-                       device float *out       [[ buffer(2) ]],
+                       device float *out       [[ buffer(1) ]],
+                       constant float &c       [[ buffer(2) ]],
                        constant uint &N        [[ buffer(3) ]],
                        uint id                 [[ thread_position_in_grid ]]) {
 
@@ -130,8 +132,6 @@ kernel void log_kernel(device const float *a   [[ buffer(0) ]],
         out[id] = log(a[id]); 
     }
 }
-
-
 
 // 12) Elementwise sin
 kernel void sin_kernel(device const float *a   [[ buffer(0) ]],
@@ -236,9 +236,9 @@ kernel void sign_kernel(device const float *a   [[ buffer(0) ]],
 
 // 20) Elementwise clipping
 kernel void clip_kernel(device const float *a    [[ buffer(0) ]],
-                        device float *out        [[ buffer(1) ]],
-                        constant float &low      [[ buffer(2) ]],
-                        constant float &high     [[ buffer(3) ]],
+                        constant float &low      [[ buffer(1) ]],
+                        constant float &high     [[ buffer(2) ]],
+                        device float *out        [[ buffer(3) ]],
                         constant uint  &N        [[ buffer(4) ]],
                         uint id                  [[ thread_position_in_grid ]])
 {
@@ -248,7 +248,7 @@ kernel void clip_kernel(device const float *a    [[ buffer(0) ]],
 }
 
 // 21) Elementwise round
-kernel void kernel_round(device const float *a   [[ buffer(0) ]],
+kernel void round_kernel(device const float *a   [[ buffer(0) ]],
                          device float *out       [[ buffer(1) ]],
                          constant uint &N        [[ buffer(2) ]],
                          uint id                 [[ thread_position_in_grid ]])
@@ -258,7 +258,7 @@ kernel void kernel_round(device const float *a   [[ buffer(0) ]],
     }
 }
 
-// 22) Broadcast_add
+// 22) Elementwise broadcast add
 kernel void broadcast_add_kernel(device const float *a   [[ buffer(0) ]],
                                  device const float *b   [[ buffer(1) ]],
                                  device float *out       [[ buffer(2) ]],
@@ -272,7 +272,7 @@ kernel void broadcast_add_kernel(device const float *a   [[ buffer(0) ]],
     }
 }
 
-// 23) Broadcast_multiply
+// 23) Elementwise broadcast multiply
 kernel void broadcast_multiply_kernel(device const float *a   [[ buffer(0) ]],
                                  device const float *b   [[ buffer(1) ]],
                                  device float *out       [[ buffer(2) ]],
@@ -287,11 +287,7 @@ kernel void broadcast_multiply_kernel(device const float *a   [[ buffer(0) ]],
 }
 
 
-
-
-
-
-// Category 2: Activations
+// Category 2: Activation operations
 
 
 // 24) Elementwise ReLU 
@@ -301,29 +297,32 @@ kernel void relu_kernel(device const float *a   [[ buffer(0) ]],
                         uint id                 [[ thread_position_in_grid ]]) {
 
     if (id < N) {
-        out[id] = fmax(a[id], 0.0f);
+        out[id] = fmax(a[id], 0.0f);      // fmax() is a Metal intrinsic that selects the larger of two floats.
     }
 }
 
 
 // 25) Elementwise Leaky ReLU
 kernel void leaky_relu_kernel(device const float *a   [[ buffer(0) ]],
-                              constant float &alpha    [[ buffer(1) ]],
-                              device float *out        [[ buffer(2) ]],
+                              device float *out        [[ buffer(1) ]],
+                              constant float &alpha    [[ buffer(2) ]],
                               constant uint &N         [[ buffer(3) ]],
                               uint id                  [[ thread_position_in_grid ]]) {
 
     if (id < N) {
+
         float x = a[id];
 
         if (x > 0.0f) {
-            out[id] = x;               
+
+            out[id] = x;  
+
         } else {
+
             out[id] = alpha * x;       
         }
     }
 }
-
 
 // 26) Elementwise Sigmoid
 kernel void sigmoid_kernel(device const float *a   [[ buffer(0) ]],
@@ -347,9 +346,6 @@ kernel void tanh_kernel(device const float *a   [[ buffer(0) ]],
     }
 }
 
-
-
-
 // 28) Elementwise softplus
 kernel void softplus_kernel(device const float *a   [[ buffer(0) ]],
                             device float *out        [[ buffer(1) ]],
@@ -360,9 +356,6 @@ kernel void softplus_kernel(device const float *a   [[ buffer(0) ]],
         out[id] = log(1.0f + exp(a[id]));
     }
 }
-
-
-
 
 // 29) Elementwise swish
 kernel void swish_kernel(device const float *a   [[ buffer(0) ]],
@@ -375,8 +368,6 @@ kernel void swish_kernel(device const float *a   [[ buffer(0) ]],
     }
 }
 
-
-
 // 30) Elementwise GELU
 kernel void gelu_kernel(device const float *a   [[ buffer(0) ]],
                         device float *out        [[ buffer(1) ]],
@@ -385,232 +376,338 @@ kernel void gelu_kernel(device const float *a   [[ buffer(0) ]],
 
     if (id < N) {
 
-        out[id] =
-            0.5f * a[id] *
-            (1.0f + tanh(
-                sqrt(2.0f / 3.14159265358979f) *
-                (a[id] + 0.044715f * a[id] * a[id] * a[id])
-            ));
+        float x = a[id];
+
+        float c = 0.7978845608028654f;   // sqrt(2/pi)
+
+        float t = c * (x + 0.044715f * x * x * x);
+
+        out[id] = 0.5f * x * (1.0f + tanh(t));
     }
 }
 
-
-
-
-
 // Category 3: Basic Reductions 
 
-// 31) Sum reduction 
 
+// 31) Sum reduction: Initial pass reduction kernel
 kernel void sum_reduce_kernel(device const float *a        [[ buffer(0) ]],
                               device float *out            [[ buffer(1) ]],
                               constant uint &N             [[ buffer(2) ]],
                               constant uint &TPT           [[ buffer(3) ]],
                               uint tid                     [[ thread_position_in_threadgroup ]],
                               uint gid                     [[ threadgroup_position_in_grid ]],
-                              uint global_id               [[ thread_position_in_grid ]],
-                              uint num_threadgroups        [[ threadgroups_per_grid ]],
-                              threadgroup float *scratch)
+                              uint num_threadgroups        [[ threadgroups_per_grid ]])
 {
-    // Each thread accumulates multiple elements
-    float sum = 0.0f;
+
+    threadgroup float scratch[256];
+
+    // global thread index and total threads in grid
+    uint global_id = gid * TPT + tid;
     uint grid_size = num_threadgroups * TPT;
+
+    // Each thread accumulates multiple elements
+
+    float sum = 0.0f;
     
     for (uint i = global_id; i < N; i += grid_size) {
+
         sum += a[i];
     }
     
     scratch[tid] = sum;
+
     threadgroup_barrier(mem_flags::mem_threadgroup);
 
     // Tree reduction
+
     for (uint stride = TPT / 2; stride > 0; stride >>= 1) {
+
         if (tid < stride) {
+
             scratch[tid] += scratch[tid + stride];
+
         }
+
         threadgroup_barrier(mem_flags::mem_threadgroup);
     }
 
+     // First thread of each threadgroup writes per-group result
+
     if (tid == 0) {
+
         out[gid] = scratch[0];
     }
 }
 
 
-// 29B) Simple GPU sum kernel for small N (single-threaded execution)
-kernel void small_sum_kernel(device const float *a  [[ buffer(0) ]],
+// 32) Sum reduction: Final pass reduction kernel
+kernel void sum_reduce_final_kernel(device const float *a  [[ buffer(0) ]],
                              device float *out      [[ buffer(1) ]],
                              constant uint &N       [[ buffer(2) ]],
                              uint tid               [[ thread_position_in_grid ]])
 {
     if (tid != 0) return;
 
-    float acc = 0.0f;
+    float val = 0.0f;
+
     for (uint i = 0; i < N; ++i) {
-        acc += a[i];
+
+        val += a[i];
+
     }
 
-    out[0] = acc;
+    out[0] = val;
 }
 
 
-// 32) Product reduction 
+// 33) Product reduction: Initial pass reduction kernel
 kernel void product_reduce_kernel(device const float *a        [[ buffer(0) ]],
                               device float *out            [[ buffer(1) ]],
                               constant uint &N             [[ buffer(2) ]],
-                              constant uint &TPT           [[ buffer(3) ]],   // threads-per-threadgroup
+                              constant uint &TPT           [[ buffer(3) ]],  
                               uint tid                     [[ thread_position_in_threadgroup ]],
                               uint gid                     [[ threadgroup_position_in_grid ]],
-                              uint global_id               [[ thread_position_in_grid ]],
-                              threadgroup float *scratch)
+                              uint num_threadgroups        [[ threadgroups_per_grid ]])
 {
+    threadgroup float scratch[256];
 
-    // Load element into shared memory
+    // global thread index and total threads in grid
+    uint global_id = gid * TPT + tid;
+    uint grid_size = num_threadgroups * TPT;
 
-    float val = 1.0f;
+     // Each thread accumulates multiple elements
 
-    if (global_id < N) {
+    float product = 1.0f;
 
-        val = a[global_id];
+    for (uint i = global_id; i <  N; i += grid_size){
+        product *= a[i]; 
     }
 
-    scratch[tid] = val;
+    scratch[tid] = product;
 
     threadgroup_barrier(mem_flags::mem_threadgroup);
 
-    // Performing reduction
+    // Tree reduction 
 
-    uint stride = TPT / 2;
-
-    while (stride > 0) {
+     for (uint stride = TPT / 2; stride > 0; stride >>= 1) {
 
         if (tid < stride) {
             scratch[tid] *= scratch[tid + stride];
         }
 
         threadgroup_barrier(mem_flags::mem_threadgroup);
-        stride /= 2;
     }
 
-    // First thread writes per-group result
+    // First thread of each threadgroup writes per-group result
 
     if (tid == 0) {
         out[gid] = scratch[0];
     }
 }
-// 33) Max reduction - OPTIMIZED with grid-stride loop
+
+
+// 34) Product reduction: Final pass reduction kernel
+kernel void product_reduce_final_kernel(device const float *a  [[ buffer(0) ]],
+                             device float *out      [[ buffer(1) ]],
+                             constant uint &N       [[ buffer(2) ]],
+                             uint tid               [[ thread_position_in_grid ]])
+{
+    if (tid != 0) return;
+
+    float val = 1.0f;
+
+    for (uint i = 0; i < N; ++i) {
+        val *= a[i];
+
+    }
+
+    out[0] = val;
+}
+
+
+// 35) Max reduction - Initial pass reduction kernel
 kernel void max_reduce_kernel(device const float *a        [[ buffer(0) ]],
                               device float *out            [[ buffer(1) ]],
                               constant uint &N             [[ buffer(2) ]],
                               constant uint &TPT           [[ buffer(3) ]],
                               uint tid                     [[ thread_position_in_threadgroup ]],
                               uint gid                     [[ threadgroup_position_in_grid ]],
-                              uint global_id               [[ thread_position_in_grid ]],
-                              uint num_threadgroups        [[ threadgroups_per_grid ]],
-                              threadgroup float *scratch)
+                              uint num_threadgroups        [[ threadgroups_per_grid ]])
 {
-    // Each thread finds max of multiple elements
-    float best = -INFINITY;
+    threadgroup float scratch[256];
+
+    // global thread index and total threads in grid
+    uint global_id = gid * TPT + tid;
     uint grid_size = num_threadgroups * TPT;
+
+    // Each thread accumulates multiple elements and finds their max.
+
+    float best = -INFINITY;
     
     for (uint i = global_id; i < N; i += grid_size) {
         best = max(best, a[i]);
     }
     
     scratch[tid] = best;
+
     threadgroup_barrier(mem_flags::mem_threadgroup);
 
     // Tree reduction
+
     for (uint stride = TPT / 2; stride > 0; stride >>= 1) {
+
         if (tid < stride) {
             scratch[tid] = max(scratch[tid], scratch[tid + stride]);
         }
         threadgroup_barrier(mem_flags::mem_threadgroup);
     }
 
+    // First thread of each threadgroup writes per-group result
+
     if (tid == 0) {
         out[gid] = scratch[0];
     }
 }
 
+// 36) Max reduction: Final pass reduction kernel
 
-// 34) Min reduction - OPTIMIZED with grid-stride loop
+kernel void max_reduce_final_kernel(device const float *a  [[ buffer(0) ]],
+                                    device float *out      [[ buffer(1) ]],
+                                    constant uint &N       [[ buffer(2) ]],
+                                    uint tid               [[ thread_position_in_grid ]])
+{
+    if (tid != 0) return;
+
+    float best = -INFINITY;
+
+    for (uint i = 0; i < N; ++i) {
+        best = max(best, a[i]);
+    }
+
+    out[0] = best;
+}
+
+
+// 37) Min reduction - Initial pass reduction kernel
 kernel void min_reduce_kernel(device const float *a        [[ buffer(0) ]],
                               device float *out            [[ buffer(1) ]],
                               constant uint &N             [[ buffer(2) ]],
                               constant uint &TPT           [[ buffer(3) ]],
                               uint tid                     [[ thread_position_in_threadgroup ]],
                               uint gid                     [[ threadgroup_position_in_grid ]],
-                              uint global_id               [[ thread_position_in_grid ]],
-                              uint num_threadgroups        [[ threadgroups_per_grid ]],
-                              threadgroup float *scratch)
+                              uint num_threadgroups        [[ threadgroups_per_grid ]])
 {
-    // Each thread finds min of multiple elements
-    float best = INFINITY;
+    threadgroup float scratch[256];
+
+    // global thread index and total threads in grid
+    uint global_id = gid * TPT + tid;
     uint grid_size = num_threadgroups * TPT;
+
+    // Each thread accumulates multiple elements and finds their min.
+
+    float best = INFINITY;
     
     for (uint i = global_id; i < N; i += grid_size) {
         best = min(best, a[i]);
     }
     
     scratch[tid] = best;
+
     threadgroup_barrier(mem_flags::mem_threadgroup);
 
     // Tree reduction
+
     for (uint stride = TPT / 2; stride > 0; stride >>= 1) {
+
         if (tid < stride) {
             scratch[tid] = min(scratch[tid], scratch[tid + stride]);
         }
+
         threadgroup_barrier(mem_flags::mem_threadgroup);
     }
+
+    // First thread of each threadgroup writes per-group result
 
     if (tid == 0) {
         out[gid] = scratch[0];
     }
 }
 
+// 38)  Min reduction: Final pass reduction kernel
+kernel void min_reduce_final_kernel(device const float *a  [[ buffer(0) ]],
+                                    device float *out      [[ buffer(1) ]],
+                                    constant uint &N       [[ buffer(2) ]],
+                                    uint tid               [[ thread_position_in_grid ]])
+{
+    if (tid != 0) return;
 
-// 35) Argmax reduction - Pass 1 (from original array)
+    float best = INFINITY;
+
+    for (uint i = 0; i < N; ++i) {
+        best = min(best, a[i]);
+    }
+
+    out[0] = best;
+}
+
+
+// 39) Argmax reduction - Initial pass reduction kernel
 kernel void argmax_reduce_kernel(device const float *a        [[ buffer(0) ]],
-                                 device uint *out_idx         [[ buffer(1) ]],
+                                 device uint  *out_idx        [[ buffer(1) ]],
                                  device float *out_val        [[ buffer(2) ]],
                                  constant uint &N             [[ buffer(3) ]],
                                  constant uint &TPT           [[ buffer(4) ]],
                                  uint tid                     [[ thread_position_in_threadgroup ]],
                                  uint gid                     [[ threadgroup_position_in_grid ]],
-                                 uint global_id               [[ thread_position_in_grid ]],
-                                 uint num_threadgroups        [[ threadgroups_per_grid ]],
-                                 threadgroup uint *scratch_idx  [[ threadgroup(0) ]],
-                                 threadgroup float *scratch_val [[ threadgroup(1) ]])
+                                 uint num_threadgroups        [[ threadgroups_per_grid ]])
 {
-    // Grid-stride loop to find local max
-    uint best_idx = 0;
-    float best_val = -INFINITY;
-    
+
+    threadgroup uint scratch_idx[256];
+    threadgroup float scratch_val[256];
+
+     // global thread index and total threads in grid
+    uint global_id = gid * TPT + tid;
     uint grid_size = num_threadgroups * TPT;
+    
+    // Each thread scans multiple elements and tracks local argmax.
+
+    uint  best_idx = 0;
+    float best_val = -INFINITY;
+
     for (uint i = global_id; i < N; i += grid_size) {
+
         float v = a[i];
+
         if (v > best_val) {
             best_val = v;
             best_idx = i;
         }
     }
-    
+
     scratch_idx[tid] = best_idx;
     scratch_val[tid] = best_val;
-    
+
     threadgroup_barrier(mem_flags::mem_threadgroup);
 
-    // Tree reduction
+    // Tree reduction on (value, index) pairs
+
     for (uint stride = TPT / 2; stride > 0; stride >>= 1) {
+
         if (tid < stride) {
-            if (scratch_val[tid + stride] > scratch_val[tid]) {
-                scratch_val[tid] = scratch_val[tid + stride];
+
+            float other_val = scratch_val[tid + stride];
+
+            if (other_val > scratch_val[tid]) {
+
+                scratch_val[tid] = other_val;
                 scratch_idx[tid] = scratch_idx[tid + stride];
             }
         }
+
         threadgroup_barrier(mem_flags::mem_threadgroup);
     }
+
+    // First thread of each threadgroup writes per-group result
 
     if (tid == 0) {
         out_idx[gid] = scratch_idx[0];
@@ -618,91 +715,90 @@ kernel void argmax_reduce_kernel(device const float *a        [[ buffer(0) ]],
     }
 }
 
-
-// 35b) Argmax reduction - Pass 2 (from partial results)
-kernel void argmax_reduce_final_kernel(device const uint *in_idx   [[ buffer(0) ]],
+// 40) Argmax reduction - Final pass reduction kernel
+kernel void argmax_reduce_final_kernel(device const uint  *in_idx  [[ buffer(0) ]],
                                        device const float *in_val  [[ buffer(1) ]],
-                                       device uint *out_idx        [[ buffer(2) ]],
-                                       constant uint &N            [[ buffer(3) ]],
-                                       constant uint &TPT          [[ buffer(4) ]],
-                                       uint tid                    [[ thread_position_in_threadgroup ]],
-                                       uint gid                    [[ threadgroup_position_in_grid ]],
-                                       uint global_id              [[ thread_position_in_grid ]],
-                                       threadgroup uint *scratch_idx  [[ threadgroup(0) ]],
-                                       threadgroup float *scratch_val [[ threadgroup(1) ]])
+                                       device uint        *out_idx [[ buffer(2) ]],
+                                       device float       *out_val [[ buffer(3) ]],
+                                       constant uint      &N       [[ buffer(4) ]],
+                                       uint tid                    [[ thread_position_in_grid ]])
 {
-    // Load from partial results
-    uint best_idx = 0;
+    if (tid != 0) return;
+
+    uint  best_idx = 0;
     float best_val = -INFINITY;
-    
-    if (global_id < N) {
-        best_idx = in_idx[global_id];
-        best_val = in_val[global_id];
-    }
-    
-    scratch_idx[tid] = best_idx;
-    scratch_val[tid] = best_val;
-    
-    threadgroup_barrier(mem_flags::mem_threadgroup);
 
-    // Tree reduction
-    for (uint stride = TPT / 2; stride > 0; stride >>= 1) {
-        if (tid < stride) {
-            if (scratch_val[tid + stride] > scratch_val[tid]) {
-                scratch_val[tid] = scratch_val[tid + stride];
-                scratch_idx[tid] = scratch_idx[tid + stride];
-            }
+    for (uint i = 0; i < N; ++i) {
+
+        float v = in_val[i];
+
+        if (v > best_val) {
+            best_val = v;
+            best_idx = in_idx[i];
         }
-        threadgroup_barrier(mem_flags::mem_threadgroup);
     }
 
-    if (tid == 0) {
-        out_idx[gid] = scratch_idx[0];
-    }
+    out_idx[0] = best_idx;
+    out_val[0] = best_val;
 }
 
 
-// 36) Argmin reduction - Pass 1 (from original array)
+// 41) Argmin reduction - Initial pass reduction kernel
 kernel void argmin_reduce_kernel(device const float *a        [[ buffer(0) ]],
-                                 device uint *out_idx         [[ buffer(1) ]],
+                                 device uint  *out_idx        [[ buffer(1) ]],
                                  device float *out_val        [[ buffer(2) ]],
                                  constant uint &N             [[ buffer(3) ]],
                                  constant uint &TPT           [[ buffer(4) ]],
                                  uint tid                     [[ thread_position_in_threadgroup ]],
                                  uint gid                     [[ threadgroup_position_in_grid ]],
-                                 uint global_id               [[ thread_position_in_grid ]],
-                                 uint num_threadgroups        [[ threadgroups_per_grid ]],
-                                 threadgroup uint *scratch_idx  [[ threadgroup(0) ]],
-                                 threadgroup float *scratch_val [[ threadgroup(1) ]])
+                                 uint num_threadgroups        [[ threadgroups_per_grid ]])
 {
-    // Grid-stride loop to find local min
-    uint best_idx = 0;
-    float best_val = INFINITY;
-    
+
+    threadgroup uint scratch_idx[256];
+    threadgroup float scratch_val[256];
+
+    // global thread index and total threads in grid
+    uint global_id = gid * TPT + tid;
     uint grid_size = num_threadgroups * TPT;
+    
+    // Each thread scans multiple elements and tracks local argmin.
+
+    uint  best_idx = 0;
+    float best_val = INFINITY;
+
     for (uint i = global_id; i < N; i += grid_size) {
+
         float v = a[i];
+
         if (v < best_val) {
             best_val = v;
             best_idx = i;
         }
     }
-    
+
     scratch_idx[tid] = best_idx;
     scratch_val[tid] = best_val;
-    
+
     threadgroup_barrier(mem_flags::mem_threadgroup);
 
-    // Tree reduction
+    // Tree reduction on (value, index) pairs
+
     for (uint stride = TPT / 2; stride > 0; stride >>= 1) {
+
         if (tid < stride) {
-            if (scratch_val[tid + stride] < scratch_val[tid]) {
-                scratch_val[tid] = scratch_val[tid + stride];
+
+            float other_val = scratch_val[tid + stride];
+
+            if (other_val < scratch_val[tid]) {
+                scratch_val[tid] = other_val;
                 scratch_idx[tid] = scratch_idx[tid + stride];
             }
         }
+
         threadgroup_barrier(mem_flags::mem_threadgroup);
     }
+
+    // First thread of each threadgroup writes per-group result
 
     if (tid == 0) {
         out_idx[gid] = scratch_idx[0];
@@ -711,51 +807,38 @@ kernel void argmin_reduce_kernel(device const float *a        [[ buffer(0) ]],
 }
 
 
-// 36b) Argmin reduction - Pass 2 (from partial results)
-kernel void argmin_reduce_final_kernel(device const uint *in_idx   [[ buffer(0) ]],
+// 42) Argmin reduction - Final pass reduction kernel
+kernel void argmin_reduce_final_kernel(device const uint  *in_idx  [[ buffer(0) ]],
                                        device const float *in_val  [[ buffer(1) ]],
-                                       device uint *out_idx        [[ buffer(2) ]],
-                                       constant uint &N            [[ buffer(3) ]],
-                                       constant uint &TPT          [[ buffer(4) ]],
-                                       uint tid                    [[ thread_position_in_threadgroup ]],
-                                       uint gid                    [[ threadgroup_position_in_grid ]],
-                                       uint global_id              [[ thread_position_in_grid ]],
-                                       threadgroup uint *scratch_idx  [[ threadgroup(0) ]],
-                                       threadgroup float *scratch_val [[ threadgroup(1) ]])
+                                       device uint        *out_idx [[ buffer(2) ]],
+                                       device float       *out_val [[ buffer(3) ]],
+                                       constant uint      &N       [[ buffer(4) ]],
+                                       uint tid                    [[ thread_position_in_grid ]])
 {
-    // Load from partial results
-    uint best_idx = 0;
+    if (tid != 0) return;
+
+    uint  best_idx = 0;
     float best_val = INFINITY;
-    
-    if (global_id < N) {
-        best_idx = in_idx[global_id];
-        best_val = in_val[global_id];
-    }
-    
-    scratch_idx[tid] = best_idx;
-    scratch_val[tid] = best_val;
-    
-    threadgroup_barrier(mem_flags::mem_threadgroup);
 
-    // Tree reduction
-    for (uint stride = TPT / 2; stride > 0; stride >>= 1) {
-        if (tid < stride) {
-            if (scratch_val[tid + stride] < scratch_val[tid]) {
-                scratch_val[tid] = scratch_val[tid + stride];
-                scratch_idx[tid] = scratch_idx[tid + stride];
-            }
+    for (uint i = 0; i < N; ++i) {
+
+        float v = in_val[i];
+
+        if (v < best_val) {
+            best_val = v;
+            best_idx = in_idx[i];
         }
-        threadgroup_barrier(mem_flags::mem_threadgroup);
     }
 
-    if (tid == 0) {
-        out_idx[gid] = scratch_idx[0];
-    }
+    out_idx[0] = best_idx;
+    out_val[0] = best_val;
 }
 
-// Category 4: Linear Algebra (7 kernels)
 
-// 1) Hadamard product (element-wise multiplication)
+// Category 4: Linear Algebra operations
+
+
+// 43) Hadamard product 
 kernel void hadamard_mat_kernel(device const float *A    [[ buffer(0) ]],
                                 device const float *B    [[ buffer(1) ]],
                                 device float *C          [[ buffer(2) ]],
@@ -770,122 +853,51 @@ kernel void hadamard_mat_kernel(device const float *A    [[ buffer(0) ]],
     }
 }
 
-// 2) Tiled matrix multiplication (A * B = C)
-kernel void tiled_matmul_kernel(device const float *A    [[ buffer(0) ]],
-                                device const float *B    [[ buffer(1) ]],
-                                device float *C          [[ buffer(2) ]],
-                                constant uint &M         [[ buffer(3) ]],  // rows of A
-                                constant uint &N         [[ buffer(4) ]],  // cols of B
-                                constant uint &K         [[ buffer(5) ]],  // cols of A / rows of B
-                                uint2 gid                [[ thread_position_in_grid ]],
-                                uint2 tid                [[ thread_position_in_threadgroup ]],
-                                uint2 tg_size            [[ threads_per_threadgroup ]]) 
-{
-    // Tile size (must match threadgroup size)
-    constexpr uint TILE_SIZE = 16;
-    
-    // Shared memory for tiles
-    threadgroup float tileA[TILE_SIZE][TILE_SIZE];
-    threadgroup float tileB[TILE_SIZE][TILE_SIZE];
-    
-    uint row = gid.y;
-    uint col = gid.x;
-    
-    float sum = 0.0f;
-    
-    // Number of tiles needed
-    uint numTiles = (K + TILE_SIZE - 1) / TILE_SIZE;
-    
-    for (uint t = 0; t < numTiles; t++) {
-        // Load tile from A
-        uint aRow = row;
-        uint aCol = t * TILE_SIZE + tid.x;
-        if (aRow < M && aCol < K) {
-            tileA[tid.y][tid.x] = A[aRow * K + aCol];
-        } else {
-            tileA[tid.y][tid.x] = 0.0f;
-        }
-        
-        // Load tile from B
-        uint bRow = t * TILE_SIZE + tid.y;
-        uint bCol = col;
-        if (bRow < K && bCol < N) {
-            tileB[tid.y][tid.x] = B[bRow * N + bCol];
-        } else {
-            tileB[tid.y][tid.x] = 0.0f;
-        }
-        
-        // Synchronize to ensure tiles are loaded
-        threadgroup_barrier(mem_flags::mem_threadgroup);
-        
-        // Compute partial dot product
-        for (uint k = 0; k < TILE_SIZE; k++) {
-            sum += tileA[tid.y][k] * tileB[k][tid.x];
-        }
-        
-        // Synchronize before loading next tile
-        threadgroup_barrier(mem_flags::mem_threadgroup);
-    }
-    
-    // Write result
-    if (row < M && col < N) {
-        C[row * N + col] = sum;
-    }
-}
 
-// 3) Matrix transpose - with grid-stride for large matrices
-kernel void transpose_kernel(device const float *A   [[ buffer(0) ]],
-                             device float *B         [[ buffer(1) ]],
-                             constant uint &rows     [[ buffer(2) ]],
-                             constant uint &cols     [[ buffer(3) ]],
-                             uint2 id                [[ thread_position_in_grid ]],
-                             uint2 grid_size         [[ threads_per_grid ]]) {
-    
-    // Grid-stride loop for large matrices
-    for (uint row = id.y; row < rows; row += grid_size.y) {
-        for (uint col = id.x; col < cols; col += grid_size.x) {
-            B[col * rows + row] = A[row * cols + col];
-        }
-    }
-}
-
-// 4) Row sum - sum each row of matrix
+// 44) Row-wise sum of matrix (compute sum of each row)
 kernel void row_sum_kernel(device const float *A     [[ buffer(0) ]],
                            device float *out         [[ buffer(1) ]],
                            constant uint &rows       [[ buffer(2) ]],
                            constant uint &cols       [[ buffer(3) ]],
                            uint id                   [[ thread_position_in_grid ]]) {
     if (id < rows) {
+
         float sum = 0.0f;
+
         for (uint j = 0; j < cols; j++) {
             sum += A[id * cols + j];
         }
+
         out[id] = sum;
     }
 }
 
-// 5) Column sum - sum each column of matrix
+// 45) Column-wise sum of matrix (compute sum of each column)
 kernel void col_sum_kernel(device const float *A     [[ buffer(0) ]],
                            device float *out         [[ buffer(1) ]],
                            constant uint &rows       [[ buffer(2) ]],
                            constant uint &cols       [[ buffer(3) ]],
                            uint id                   [[ thread_position_in_grid ]]) {
     if (id < cols) {
+        
         float sum = 0.0f;
+
         for (uint i = 0; i < rows; i++) {
             sum += A[i * cols + id];
         }
+        
         out[id] = sum;
     }
 }
 
-// 6) Row scale - multiply each row by corresponding scalar
+// 46) Row-wise scaling (multiply each row by its scalar)
 kernel void row_scale_kernel(device const float *A     [[ buffer(0) ]],
                              device const float *s     [[ buffer(1) ]],
                              device float *out         [[ buffer(2) ]],
                              constant uint &rows       [[ buffer(3) ]],
                              constant uint &cols       [[ buffer(4) ]],
                              uint2 id                  [[ thread_position_in_grid ]]) {
+
     uint row = id.y;
     uint col = id.x;
     
@@ -894,7 +906,7 @@ kernel void row_scale_kernel(device const float *A     [[ buffer(0) ]],
     }
 }
 
-// 7) Column scale - multiply each column by corresponding scalar
+// 47) Column-wise scaling (multiply each column by its scalar)
 kernel void col_scale_kernel(device const float *A     [[ buffer(0) ]],
                              device const float *s     [[ buffer(1) ]],
                              device float *out         [[ buffer(2) ]],
@@ -911,9 +923,60 @@ kernel void col_scale_kernel(device const float *A     [[ buffer(0) ]],
 
 
 
-// Category 5: Miscellaneous (2 kernels)
+// 48) Matrix transpose
+kernel void transpose_kernel(device const float *A   [[ buffer(0) ]],
+                             device float *B         [[ buffer(1) ]],
+                             constant uint &rows     [[ buffer(2) ]],
+                             constant uint &cols     [[ buffer(3) ]],
+                             uint2 id                [[ thread_position_in_grid ]]) {
+    
+    uint row = id.y;
+    uint col = id.x;
 
-// 1) Slice - extract a contiguous slice from an array
+    if (row < rows && col < cols) {
+
+        B[col * rows + row] = A[row * cols + col];
+    }
+}
+
+
+// 49) Matrix multiplication (A * B = C)
+// A: M x K, B: K x N, C: M x N  (row-major)
+kernel void matmul_kernel(device const float *A    [[ buffer(0) ]],
+                          device const float *B    [[ buffer(1) ]],
+                          device float *C          [[ buffer(2) ]],
+                          constant uint &M         [[ buffer(3) ]],  // rows of A
+                          constant uint &N         [[ buffer(4) ]],  // cols of B
+                          constant uint &K         [[ buffer(5) ]],  // cols of A / rows of B
+                          uint2 id                 [[ thread_position_in_grid ]]) {
+
+    uint row = id.y;
+    uint col = id.x;
+
+    // Bounds check: C is M x N
+
+    if (row >= M || col >= N) {
+        return;
+    }
+
+    float val = 0.0f;
+
+    // Dot product of row 'row' of A and column 'col' of B
+
+    for (uint k = 0; k < K; ++k) {
+
+        float a = A[row * K + k];  // A[row, k]
+        float b = B[k * N + col];  // B[k, col]
+        val += a * b;
+    }
+
+    C[row * N + col] = val;        // C[row, col]
+}
+
+
+// Category 5: Miscellaneous operations
+
+// 50) Slice - extract a contiguous slice from an array
 kernel void slice_kernel(device const float *a     [[ buffer(0) ]],
                          device float *out         [[ buffer(1) ]],
                          constant uint &start      [[ buffer(2) ]],
@@ -927,36 +990,15 @@ kernel void slice_kernel(device const float *a     [[ buffer(0) ]],
     }
 }
 
-
-// 2) Bitonic sort - parallel sorting algorithm
-// Note: This is a single step of bitonic sort. Multiple passes are needed for complete sorting.
-// The array length must be a power of 2.
-kernel void bitonic_sort_kernel(device float *data        [[ buffer(0) ]],
-                               constant uint &stage       [[ buffer(1) ]],
-                               constant uint &step        [[ buffer(2) ]],
-                               constant uint &N           [[ buffer(3) ]],
-                               uint id                    [[ thread_position_in_grid ]]) 
+// 51) Gather - index-based selection from an array
+kernel void gather_kernel(device const float *source [[ buffer(0) ]],
+                          device const uint  *index  [[ buffer(1) ]],
+                          device float *out         [[ buffer(2) ]],
+                          constant uint &N          [[ buffer(3) ]],
+                          uint id                   [[ thread_position_in_grid ]])
 {
-    if (id >= N) return;
-    
-    // Calculate the partner index for comparison
-    uint partner = id ^ step;
-    
-    // Only process if this thread's id is less than partner
-    // (to avoid duplicate comparisons)
-    if (partner > id) {
-        float a = data[id];
-        float b = data[partner];
-        
-        // Determine sort direction based on stage
-        // If (id & stage) == 0, sort ascending; otherwise descending
-        bool ascending = ((id & stage) == 0);
-        
-        // Swap if needed
-        if ((ascending && a > b) || (!ascending && a < b)) {
-            data[id] = b;
-            data[partner] = a;
-        }
+    if (id < N) {
+        uint j = index[id];
+        out[id] = source[j];
     }
 }
-
