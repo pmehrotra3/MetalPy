@@ -1,3 +1,4 @@
+
 # MetalPy: GPU-Accelerated Array Computing for Apple Silicon
 
 **Author:** Pranav Mehrotra  
@@ -109,13 +110,16 @@ Rather than writing 51 separate dispatch functions, I designed 13 generic launch
 
 -   Apple Silicon Mac (M1/M2/M3/M4 series)
 -   Xcode Command Line Tools: `xcode-select --install`
--   Python 3.x with NumPy
+-   Python 3.x with dependencies
 
-### Compilation
+### Setup
 
 bash
 
 ```bash
+# Install dependencies
+pip install -r requirements.txt
+
 # Compile Metal kernels to binary library
 xcrun -sdk macosx metal -c metal_kernels.metal -o metal_kernels.air
 xcrun -sdk macosx metallib metal_kernels.air -o metal_kernels.metallib
@@ -123,7 +127,7 @@ xcrun -sdk macosx metallib metal_kernels.air -o metal_kernels.metallib
 
 ### Example Usage
 
-python
+Python
 
 ```python
 from MetalPy import MetalPy
@@ -159,71 +163,31 @@ python3 test.py
 
 Results are written to `output/test_results_[timestamp].txt`
 
-----------
 
-## Performance Characteristics
+---
 
-MetalPy leverages unified memory to minimize overhead, making GPU acceleration practical for:
-
--   Medium to large arrays (10K+ elements for elementwise ops)
--   Matrix operations (1000×1000 and larger)
--   Compute-intensive operations (transcendental functions, activations)
-
-For very small arrays (<1000 elements), CPU operations may be faster due to kernel launch overhead. The library is designed for scenarios where computational intensity justifies GPU dispatch.
-
-----------
-
-## What I Learned
-
-This project required mastering several advanced concepts:
-
-**GPU Computing Fundamentals:**
-
--   Metal compute pipeline architecture and command buffer management
--   Threadgroup memory and synchronization primitives
--   Occupancy optimization and memory coalescing
--   Kernel dispatch strategies and grid configuration
-
-**Parallel Algorithms:**
-
--   Tree-based parallel reductions with logarithmic depth
--   Work-efficient scanning and prefix sum patterns
--   Load balancing across heterogeneous workloads
-
-**Numerical Computing:**
-
--   Floating-point arithmetic precision and error accumulation
--   Numerically stable algorithm variants (e.g., log-space products)
--   Validation strategies for approximate computations
-
-**Software Engineering:**
-
--   API design balancing simplicity with control
--   Generic abstractions to reduce code duplication
--   Comprehensive testing and validation frameworks
--   Performance profiling and optimization
-
-----------
 
 ## Future Directions
 
 MetalPy provides a foundation for more advanced operations:
 
-1.  **Extended Linear Algebra:** LU decomposition, QR factorization, eigenvalue solvers
-2.  **Neural Network Primitives:** Convolution, pooling, attention mechanisms, dropout
-3.  **Optimized Matrix Multiplication:** Tiled implementations using threadgroup memory for 10-100× speedup
-4.  **Half-Precision Support:** float16 operations for 2× memory bandwidth
-5.  **Automatic Differentiation:** Reverse-mode autodiff for gradient computation
-6.  **Batched Operations:** Process multiple arrays simultaneously
+1. **Extended Linear Algebra:** LU decomposition, QR factorization, eigenvalue solvers
+2. **Neural Network Primitives:** Convolution, pooling, attention mechanisms, dropout
+3. **Optimized Matrix Multiplication:** Tiled implementations using threadgroup memory for 10-100× speedup
+4. **Half-Precision Support:** float16 operations for 2× memory bandwidth
+5. **Automatic Differentiation:** Reverse-mode autodiff for gradient computation
 
-----------
+---
 
 ## Acknowledgments
 
-This project was developed with assistance from AI tools (ChatGPT and Claude) for debugging, learning Metal API specifics, and understanding GPU programming patterns. All architectural decisions, algorithm implementations, and design choices were made independently through this learning process.
+This project was developed with assistance from AI tools (ChatGPT and Claude) for understanding Metal framework APIs, debugging parallel algorithms, learning floating-point precision handling, and refining documentation. All architectural decisions, algorithm implementations, and design choices were made independently through an iterative learning process.
 
-----------
+---
 
 ## License
 
 MIT License - See LICENSE file for details
+
+---
+

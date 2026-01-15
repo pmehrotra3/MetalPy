@@ -1,0 +1,5 @@
+numpy>=1.24.0
+pyobjc-framework-Metal>=9.0
+pyobjc-framework-MetalKit>=9.0
+pyobjc-framework-Quartz>=9.0
+pyobjc-core>=9.0
